@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infinite Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f0f0f0;
+    }
+    .hidden { display: none; }
+    #home, #quiz, #end {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      width: 320px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      font-size: 16px;
+      background: #007bff;
+      border: none;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+    .choice { display: block; margin: 10px 0; width: 100%; }
+  </style>
+</head>
+<body>
+
+  <!-- Home screen -->
+  <div id="home">
+    <h1>BrainRush</h1>
+    <button id="startBtn">Start Quiz</button>
+  </div>
+
+  <!-- Quiz screen -->
+  <div id="quiz" class="hidden">
+    <h2 id="question"></h2>
+    <div id="choices"></div>
+  </div>
+
+  <!-- End screen -->
+  <div id="end" class="hidden">
+    <h2>Quiz Finished!</h2>
+    <p id="score"></p>
+    <button onclick="location.reload()">Restart</button>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const home = document.getElementById("home");
+    const quiz = document.getElementById("quiz");
+    const end = document.getElementById("end");
+    const questionEl = document.getElementById("question");
+    const choicesEl = document.getElementById("choices");
+    const scoreEl = document.getElementById("score");
+
+    let questions = [];
+    let current = 0;
+    let score = 0;
+
+    startBtn.addEventListener("click", async () => {
+      home.classList.add("hidden");
+      quiz.classList.remove("hidden");
+      await loadQuestionsFromAPI();
+      loadQuestion();
+    });
+
+    async function loadQuestionsFromAPI() {
+      const res = await fetch("https://opentdb.com/api.php?amount=50&type=multiple");
+      const data = await res.json();
+      questions = data.results.map(q => {
+        const allChoices = [...q.incorrect_answers];
+        const randomIndex = Math.floor(Math.random() * 4);
+        allChoices.splice(randomIndex, 0, q.correct_answer);
+        return {
+          question: q.question,
+          choices: allChoices,
+          answer: randomIndex
+        };
+      });
+    }
+
+    function loadQuestion() {
+      if (current >= questions.length) {
+        quiz.classList.add("hidden");
+        end.classList.remove("hidden");
+        scoreEl.textContent = `Your score: ${score}/${questions.length}`;
+        return;
+      }
+
+      const q = questions[current];
+      questionEl.innerHTML = q.question;
+      choicesEl.innerHTML = "";
+
+      q.choices.forEach((choice, i) => {
+        const btn = document.createElement("button");
+        btn.innerHTML = choice;
+        btn.classList.add("choice");
+        btn.onclick = () => {
+          if (i === q.answer) score++;
+          current++;
+          loadQuestion();
+        };
+        choicesEl.appendChild(btn);
+      });
+    }
+  </script>
+
+</body>
+</html>
